@@ -2,7 +2,7 @@ import json
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 
-from compute import analyse_game
+from .compute import analyse_game
 
 app = FastAPI()
 
@@ -12,13 +12,13 @@ game_runnning = False
 async def start():
     game_runnning = True
     print("start called")
-    return
+    return {"response": "started"}
 
 @app.get("/stop")
 async def stop():
     game_runnning = False
     print("stop called")
-    return
+    return {"response": "stopped"}
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
