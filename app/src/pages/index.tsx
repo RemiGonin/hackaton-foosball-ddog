@@ -13,7 +13,7 @@ export default function Home() {
   return (
     <main className="flex flex-col w-screen h-screen ">
       <div className="w-full p-4">
-        <h1 className="text-lg">Track your balls</h1>
+        <h1 className="text-lg"> Foosball tracker </h1>
       </div>
       <div className="w-full flex flex-wrap flex-1 overflow-hidden">
         <div className="h-full w-1/2">
