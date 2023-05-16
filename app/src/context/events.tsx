@@ -1,8 +1,7 @@
 import React, { useContext, useEffect } from "react";
 import { createContext, useState } from "react";
 import { APIEvent, Event } from "../types/event";
-import { io } from "socket.io-client";
-import { RASBERRY_BASE_PATH } from "../config";
+import { RASBERRY_BASE_PATH } from "@/config";
 
 type EventContext = {
   start: () => void;
@@ -28,10 +27,6 @@ const eventsContext = createContext<EventContext>({
 
 const { Provider } = eventsContext;
 
-const socket = io(RASBERRY_BASE_PATH, {
-  autoConnect: false,
-});
-
 const convertSpeed = (speed: number) => (speed * 3600) / 1000;
 
 function EventsProvider({ children }: { children: React.ReactNode }) {
@@ -43,22 +38,24 @@ function EventsProvider({ children }: { children: React.ReactNode }) {
 
   const start = async () => {
     setIsGameRunning(true);
-    socket.connect();
   };
   const stop = async () => {
     setIsGameRunning(false);
-    socket.disconnect();
   };
 
   const clearEvents = () => setEvents([]);
 
   useEffect(() => {
-    socket.on("message", (apiEvent: APIEvent) => {
-      /** If the event is a speed, we add it to the speed array to display graphs and stats */
+    if (!isGameRunning) return;
+
+    const ws = new WebSocket(`${RASBERRY_BASE_PATH}/ws`);
+
+    ws.onmessage = (apiEvent: MessageEvent<APIEvent>) => {
+      console.log(apiEvent);
 
       const timestamp = new Date().getTime();
 
-      const event: Event = { timestamp, ...apiEvent };
+      const event: Event = { timestamp, ...apiEvent.data };
 
       if (event.type === "speed") {
         const convertedSpeed = convertSpeed(event.value);
@@ -74,12 +71,14 @@ function EventsProvider({ children }: { children: React.ReactNode }) {
       setEvents((prevEvents) => [event, ...prevEvents]);
 
       if (event.type === "goal") setNbGoals((prevGoal) => prevGoal + 1);
-    });
+    };
+
+    console.log("connected ws", ws);
 
     return () => {
-      socket.off("message");
+      ws.close();
     };
-  }, []);
+  }, [isGameRunning]);
 
   return (
     <Provider

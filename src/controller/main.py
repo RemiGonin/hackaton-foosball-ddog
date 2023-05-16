@@ -4,9 +4,22 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 
 from .compute import analyse_game
 
+from fastapi.middleware.cors import CORSMiddleware
+
 app = FastAPI()
 
+origins = ["*"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 game_runnning = False
+
 
 @app.get("/start")
 async def start():
@@ -14,11 +27,13 @@ async def start():
     print("start called")
     return {"response": "started"}
 
+
 @app.get("/stop")
 async def stop():
     game_runnning = False
     print("stop called")
     return {"response": "stopped"}
+
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):

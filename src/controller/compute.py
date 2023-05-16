@@ -3,6 +3,7 @@ from fastapi import WebSocketDisconnect
 
 GAME_TIMEOUT = 60 * 30
 
+
 async def analyse_game(callback):
     start_game_time = time.time()
     print("analyse called")
@@ -13,12 +14,11 @@ async def analyse_game(callback):
             raise WebSocketDisconnect()
         # Do your stuff here
         print("sending stuff")
-        # await callback(None)
+        await callback(None)
         # message = {"type": "speed", "team": "unknown", "value": "0."}
         # if data:
-            # message = data
+        # message = data
         # str_message = json.dumps(message)
         # await websocket.send_text(str_message)
         time.sleep(10)
         # call callback with {"type": "speed", "team": "unknown", "value": "0."}
-
