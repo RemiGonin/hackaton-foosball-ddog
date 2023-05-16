@@ -39,6 +39,8 @@ def get_biggest_contour_center(frame):
 def nan_helper(y):
     return np.isnan(y), lambda z: z.nonzero()[0]
 
+def get_pixel_to_meter_ratio(frame, mask_field_low, mask_field_high):
+    return 1
 
 def get_pixel_to_meter_ratio(frame, mask_field_low, mask_field_high):
     mask = get_mask(frame, mask_field_low, mask_field_high)
@@ -68,7 +70,6 @@ def get_pixel_to_meter_ratio(frame, mask_field_low, mask_field_high):
 
 def get_goals(frame, mask_goals_low, mask_goals_high):
     mask_goals = get_mask(frame, mask_goals_low, mask_goals_high)
-    cv2.imshow("mask_goals", mask_goals)
     contours, _ = cv2.findContours(mask_goals, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
     if contours:
@@ -150,7 +151,7 @@ def track(send_message: Callable[[Message], None]):
     # Set the video flux buffer size to 5 to drop frames and not accumulate delay if we can't process fast emough
     #! TO REMOVE
     video = cv2.VideoCapture(1)
-    video.set(cv2.CV_CAP_PROP_BUFFERSIZE, 5)
+    video.set(cv2.CAP_PROP_FRAME_COUNT, 5)
 
     mask_ball_low = (23, 131, 133)
     mask_ball_high = (33, 251, 252)
@@ -177,10 +178,8 @@ def track(send_message: Callable[[Message], None]):
                 frame, mask_field_low, mask_field_high
             )
             first_frame = False
-        cv2.imshow("Frame", frame)
 
         ball_mask = get_mask(frame, mask_ball_low, mask_ball_high)
-        cv2.imshow("Ball mask", ball_mask)
         centers = get_biggest_contour_center(ball_mask)
         if centers:
             cX, cY = centers
@@ -218,9 +217,6 @@ def track(send_message: Callable[[Message], None]):
             # reset
             i = 0
 
-        key = cv2.waitKey(30)
-        if key == ord("q") or key == 27:
-            break
 
     # video.release()
     # cv2.destroyAllWindows()
@@ -230,17 +226,21 @@ async def analyse_game(send_message):
     start_game_time = time.time()
     print("analyse called")
     while True:
-        game_duration = time.time() - start_game_time
-        if game_duration > GAME_TIMEOUT:
-            print("Game timeout")
-            raise WebSocketDisconnect()
-        # Do your stuff here
-        print("sending stuff")
-        await send_message(None)
+        await send_message(Message(**{"type": "speed", "team": None, "value": 40.4}))
+        time.sleep(3)
+    #    track(send_message)
+    # while True:
+    #     game_duration = time.time() - start_game_time
+    #     if game_duration > GAME_TIMEOUT:
+    #         print("Game timeout")
+    #         raise WebSocketDisconnect()
+    #     # Do your stuff here
+    #     print("sending stuff")
+    #     await send_message(None)
         # message = {"type": "speed", "team": "unknown", "value": "0."}
         # if data:
         # message = data
         # str_message = json.dumps(message)
         # await websocket.send_text(str_message)
-        time.sleep(10)
+
         # call callback with {"type": "speed", "team": "unknown", "value": "0."}
