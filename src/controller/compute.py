@@ -147,10 +147,10 @@ def get_ball_velocity(centers_x, centers_y, pixel_to_meter_ratio):
     return max_velocity_ms
 
 
-def track(send_message: Callable[[Message], None]):
+async def track(send_message: Callable[[Message], None]):
     # Set the video flux buffer size to 5 to drop frames and not accumulate delay if we can't process fast emough
     #! TO REMOVE
-    video = cv2.VideoCapture(1)
+    video = cv2.VideoCapture(0)
     video.set(cv2.CAP_PROP_FRAME_COUNT, 5)
 
     mask_ball_low = (23, 131, 133)
@@ -207,12 +207,12 @@ def track(send_message: Callable[[Message], None]):
                 centers_x, centers_y, pixel_to_meter_ratio
             )
             print(max_velocity_ms)
-            send_message(
-                {
+            await send_message(
+                Message(**{
                     "type": "speed",
                     "team": None,
                     "value": "{:.2f}".format(max_velocity_ms),
-                }
+                })
             )
             # reset
             i = 0
@@ -223,12 +223,12 @@ def track(send_message: Callable[[Message], None]):
 
 
 async def analyse_game(send_message):
-    start_game_time = time.time()
+    # start_game_time = time.time()
     print("analyse called")
-    while True:
-        await send_message(Message(**{"type": "speed", "team": None, "value": 40.4}))
-        time.sleep(3)
-    #    track(send_message)
+    # while True:
+    #     await send_message(Message(**{"type": "speed", "team": None, "value": 40.4}))
+    #     time.sleep(3)
+    await track(send_message)
     # while True:
     #     game_duration = time.time() - start_game_time
     #     if game_duration > GAME_TIMEOUT:

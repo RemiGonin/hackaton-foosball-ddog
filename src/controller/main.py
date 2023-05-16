@@ -37,6 +37,7 @@ async def stop():
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
+
     async def send_update(message: Message = None):
         print(f'{message = }')
         if message is None:
