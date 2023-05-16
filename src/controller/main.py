@@ -1,13 +1,16 @@
 import json
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from pydantic import BaseModel
 
 from .compute import analyse_game
+from .types import Message
 
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
+<<<<<<< Updated upstream
 origins = ["*"]
 
 app.add_middleware(
@@ -19,29 +22,30 @@ app.add_middleware(
 )
 
 game_runnning = False
+=======
+>>>>>>> Stashed changes
 
 
 @app.get("/start")
 async def start():
-    game_runnning = True
+    game_running = True
     print("start called")
     return {"response": "started"}
 
 
 @app.get("/stop")
 async def stop():
-    game_runnning = False
+
     print("stop called")
     return {"response": "stopped"}
 
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
-    async def send_update(data):
-        message = {"type": "speed", "team": "unknown", "value": "0."}
-        if data:
-            message = data
-        str_message = json.dumps(message)
+    async def send_update(message: Message = None):
+        if message is None:
+            message = Message(**{"type": "speed", "team": None, "value": 0.})
+        str_message: str = json.dumps(message.dict())
         await websocket.send_text(str_message)
 
     await websocket.accept()
@@ -49,6 +53,6 @@ async def websocket_endpoint(websocket: WebSocket):
     try:
         await analyse_game(send_update)
     except WebSocketDisconnect:
-        game_runnning = False
+
         print("Websocket connection stopped")
         return
