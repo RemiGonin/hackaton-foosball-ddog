@@ -64,7 +64,7 @@ def get_pixel_to_meter_ratio(frame, mask_field_low, mask_field_high):
         print(f"{pixel_to_meter_ratio = } {rect = !r}")
         return pixel_to_meter_ratio
 
-    return 1
+    return 0.00088
 
 
 def get_goals(frame, mask_goals_low, mask_goals_high):
@@ -148,9 +148,10 @@ def get_ball_velocity(centers_x, centers_y, pixel_to_meter_ratio):
 async def track(send_message):
     # Set the video flux buffer size to 5 to drop frames and not accumulate delay if we can't process fast emough
     #! TO REMOVE
-    video = cv2.VideoCapture(VIDEO_PATH)
-    video.set(cv2.CAP_PROP_FRAME_COUNT, 5)
-    video.set(cv2.CAP_PROP_POS_FRAMES, 12000)
+    video = cv2.VideoCapture(1)
+    # video = cv2.VideoCapture(VIDEO_PATH)
+    # video.set(cv2.CAP_PROP_FRAME_COUNT, 5)
+    # video.set(cv2.CAP_PROP_POS_FRAMES, 12000)
 
     mask_ball_low = (23, 131, 133)
     mask_ball_high = (33, 251, 252)
