@@ -9,7 +9,7 @@ from .types import Message
 VIDEO_PATH = "./VID_20230515_105413.mp4"
 DOWNSCALE_FACTOR = 80  # percent of original size
 FRAMES_PER_TIME_WINDOW = 15
-FRAMERATE = 60  # frames per second
+FRAMERATE = 30  # frames per second
 TIME_PER_FRAME = 1 / FRAMERATE  # seconds
 CAMERA_DIMENSIONS = (1080, 1920)  # (height, width)
 FOOSBALL_WIDTH = 0.7  # meters
@@ -91,11 +91,11 @@ def check_if_goal(ball_center, goals):
         goal_left, goal_right = goals
         x1, y1, w1, h1 = goal_left
         if x1 < ball_center[0] < x1 + w1 and y1 < ball_center[1] < y1 + h1:
-            return "blue"  #! LEFT IS BLUE
+            return "red"  #! LEFT IS BLUE
 
         x2, y2, w2, h2 = goal_right
         if x2 < ball_center[0] < x2 + w2 and y2 < ball_center[1] < y2 + h2:
-            return "red"
+            return "blue"
 
         return None
     return None
