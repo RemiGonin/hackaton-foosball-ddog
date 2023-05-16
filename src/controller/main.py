@@ -22,7 +22,7 @@ async def stop():
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
-    async def send_update(websocket, data):
+    async def send_update(data):
         message = {"type": "speed", "team": "unknown", "value": "0."}
         if data:
             message = data
@@ -32,7 +32,8 @@ async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     print("Game started")
     try:
-        analyse_game(send_update)
+        await analyse_game(send_update)
     except WebSocketDisconnect:
         game_runnning = False
         print("Websocket connection stopped")
+        return
