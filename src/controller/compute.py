@@ -87,7 +87,7 @@ def get_goals(frame, mask_goals_low, mask_goals_high):
     return None
 
 
-def check_if_goal(frame, mask_goals_low, mask_goals_high, ball_center, goals):
+def check_if_goal(ball_center, goals):
     if goals:
         goal_left, goal_right = goals
         x1, y1, w1, h1 = goal_left
@@ -146,7 +146,7 @@ def get_ball_velocity(centers_x, centers_y, pixel_to_meter_ratio):
     return max_velocity_ms
 
 
-def track():
+async def track(send_message):
     # Set the video flux buffer size to 5 to drop frames and not accumulate delay if we can't process fast emough
     #! TO REMOVE
     video = cv2.VideoCapture(VIDEO_PATH)
@@ -192,7 +192,7 @@ def track():
             centers_y[i] = cY
 
             if goal_cool_down == 0:
-                goal = check_if_goal(frame, mask_goals_low, mask_goals_high, (cX, cY), goals)
+                goal = check_if_goal((cX, cY), goals)
                 if goal is not None:
                     await send_message(
                         Message(**{"type": "goal", "team": goal, "value": None})
@@ -237,13 +237,13 @@ def track():
     # cv2.destroyAllWindows()
 
 
-def analyse_game():
+async def analyse_game(send_message):
     # start_game_time = time.time()
     print("analyse called")
     # while True:
     #     await send_message(Message(**{"type": "speed", "team": None, "value": 40.4}))
     #     time.sleep(3)
-    track()
+    await track(send_message)
     # while True:
     #     game_duration = time.time() - start_game_time
     #     if game_duration > GAME_TIMEOUT:
