@@ -50,14 +50,25 @@ function EventsProvider({ children }: { children: React.ReactNode }) {
 
     const ws = new WebSocket(`${RASBERRY_BASE_PATH}/ws`);
 
-    ws.onmessage = (apiEvent: MessageEvent<APIEvent>) => {
-      console.log(apiEvent);
+    ws.onmessage = (apiEvent: MessageEvent) => {
+      console.log("new message receive");
+      console.log(apiEvent.data);
 
       const timestamp = new Date().getTime();
 
-      const event: Event = { timestamp, ...apiEvent.data };
+      const apiEventParsed = JSON.parse(apiEvent.data) as APIEvent;
+
+      const event: Event = {
+        timestamp,
+        team: apiEventParsed.team,
+        value: apiEventParsed.value,
+        type: apiEventParsed.type,
+      };
+
+      console.log(event);
 
       if (event.type === "speed") {
+        console.log("its a speed");
         const convertedSpeed = convertSpeed(event.value);
 
         setSpeeds((prevSpeeds) => [
@@ -66,6 +77,7 @@ function EventsProvider({ children }: { children: React.ReactNode }) {
         ]);
 
         if (convertedSpeed > highestSpeed) setHighestSpeed(convertedSpeed);
+        return;
       }
 
       setEvents((prevEvents) => [event, ...prevEvents]);
