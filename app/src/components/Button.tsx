@@ -1,4 +1,4 @@
-import { log } from "console";
+import React from "react";
 import { ButtonHTMLAttributes } from "react";
 
 type Props = {

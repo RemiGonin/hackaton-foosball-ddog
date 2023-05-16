@@ -4,8 +4,12 @@ import { Buttons } from "@/components/Buttons";
 import { Separator } from "@/components/Separator";
 import { EventList } from "@/components/EventList";
 import { SpeedGraph } from "@/components/SpeedGraph";
+import { Stats } from "@/components/Stats";
+import { useEvents } from "@/context/events";
 
 export default function Home() {
+  const { highestSpeed, nbGoals } = useEvents();
+
   return (
     <main className="flex flex-col w-screen h-screen ">
       <div className="w-full p-4">
@@ -18,7 +22,14 @@ export default function Home() {
             <Separator type="horizontal" />
           </div>
           <div className="w-full h-3/4 ">
-            <SpeedGraph />
+            <div className="h-2/3 w-full">
+              <SpeedGraph />
+            </div>
+            <div className="h-1/3 flex flex-wrap justify-around items-center gap-4 py-8">
+              <Stats label="Highest Speed" value={highestSpeed} unit="km/h" />
+              <Stats label="Total Goals" value={nbGoals} />
+              <Stats label="Highest Speed" value={50} unit="km/h" />
+            </div>
           </div>
         </div>
         <Separator type="vertical" />

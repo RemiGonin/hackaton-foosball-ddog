@@ -2,6 +2,8 @@ import "@/styles/globals.css";
 import type { AppProps } from "next/app";
 import { Roboto } from "next/font/google";
 
+import { EventsProvider } from "@/context/events";
+
 const inter = Roboto({ subsets: ["latin"], weight: ["300", "500", "900"] });
 
 export default function App({ Component, pageProps }: AppProps) {
@@ -12,7 +14,9 @@ export default function App({ Component, pageProps }: AppProps) {
           font-family: ${inter.style.fontFamily};
         }
       `}</style>
-      <Component {...pageProps} />
+      <EventsProvider>
+        <Component {...pageProps} />
+      </EventsProvider>
     </>
   );
 }
