@@ -37,11 +37,15 @@ async def stop():
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
+
     async def send_update(message: Message = None):
+        print(f'{message = }')
         if message is None:
             message = Message(**{"type": "speed", "team": None, "value": 0.0})
         str_message: str = json.dumps(message.dict())
-        await websocket.send_text(str_message)
+        print(f'{str_message = }')
+        r = await websocket.send_text(str_message)
+        print(r)
 
     await websocket.accept()
     print("Game started")
