@@ -31,17 +31,15 @@ async def start():
 
 @app.get("/stop")
 async def stop():
-
     print("stop called")
     return {"response": "stopped"}
-
 
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     async def send_update(message: Message = None):
         if message is None:
-            message = Message(**{"type": "speed", "team": None, "value": 0.})
+            message = Message(**{"type": "speed", "team": None, "value": 0.0})
         str_message: str = json.dumps(message.dict())
         await websocket.send_text(str_message)
 
@@ -50,6 +48,5 @@ async def websocket_endpoint(websocket: WebSocket):
     try:
         await analyse_game(send_update)
     except WebSocketDisconnect:
-
         print("Websocket connection stopped")
         return
