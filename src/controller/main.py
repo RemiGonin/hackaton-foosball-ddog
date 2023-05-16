@@ -10,7 +10,6 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
-<<<<<<< Updated upstream
 origins = ["*"]
 
 app.add_middleware(
@@ -22,13 +21,10 @@ app.add_middleware(
 )
 
 game_runnning = False
-=======
->>>>>>> Stashed changes
 
 
 @app.get("/start")
 async def start():
-    game_running = True
     print("start called")
     return {"response": "started"}
 
@@ -38,6 +34,7 @@ async def stop():
 
     print("stop called")
     return {"response": "stopped"}
+
 
 
 @app.websocket("/ws")
