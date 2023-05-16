@@ -5,8 +5,8 @@ import { useEvents } from "@/context/events";
 Chart.register(...registerables);
 
 const options = {
-  responsive: true,
-  maintainAspectRatio: true,
+  responsive: false,
+  maintainAspectRatio: false,
 };
 
 export const SpeedGraph = () => {
@@ -14,10 +14,13 @@ export const SpeedGraph = () => {
 
   const speedDatas = useMemo(() => speeds.map((e) => e.value), [speeds]);
 
-  const speedLabels = useMemo(() => speeds.map((e) => e.timestamp), [speeds]);
+  const speedLabels = useMemo(
+    () => speeds.map((e) => new Date(e.timestamp).toLocaleTimeString()),
+    [speeds]
+  );
 
   return (
-    <div className="w-full h-full flex items-center justify-center">
+    <div className="w-full h-full flex items-center justify-center overflow-auto">
       <Line
         data={{
           datasets: [
@@ -58,6 +61,9 @@ export const SpeedGraph = () => {
             y: {
               min: 0,
             },
+          },
+          animation: {
+            duration: 0,
           },
         }}
       />

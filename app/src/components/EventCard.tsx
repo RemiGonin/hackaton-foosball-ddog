@@ -33,7 +33,7 @@ export const EventCard: React.FunctionComponent<Props> = ({ event }) => {
       </div>
       <div className="flex items-center justify-center ">
         <div className="flex gap-2 justify-start items-baseline">
-          <span className="font-black text-2xl">{event.value}</span>
+          <span className="font-black text-2xl">{event.value.toFixed(2)}</span>
           <span className="text-sm font-normal text-gray-600 ">km/h</span>
         </div>
       </div>

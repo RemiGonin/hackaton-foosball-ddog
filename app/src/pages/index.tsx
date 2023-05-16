@@ -8,7 +8,7 @@ import { Stats } from "@/components/Stats";
 import { useEvents } from "@/context/events";
 
 export default function Home() {
-  const { highestSpeed, nbGoals } = useEvents();
+  const { highestSpeed, nbGoals, nbGoalsBlue, nbGoalsRed } = useEvents();
 
   return (
     <main className="flex flex-col w-screen h-screen ">
@@ -28,12 +28,8 @@ export default function Home() {
             <div className="h-1/3 w-full flex gap-4 py-8 px-4 overflow-auto">
               <Stats label="Highest Speed" value={highestSpeed} unit="km/h" />
               <Stats label="Total Goals" value={nbGoals} />
-              <Stats label="Hi  ghest Speed" value={50} unit="km/h" />
-              <Stats label="Hi  ghest Speed" value={50} unit="km/h" />
-              <Stats label="Hi  ghest Speed" value={50} unit="km/h" />
-              <Stats label="Hi  ghest Speed" value={50} unit="km/h" />
-              <Stats label="Hi  ghest Speed" value={50} unit="km/h" />
-              <Stats label="Hi  ghest Speed" value={50} unit="km/h" />
+              <Stats label="Goals Red" value={nbGoalsRed} team="red" />
+              <Stats label="Goals Blue" value={nbGoalsBlue} team="blue" />
             </div>
           </div>
         </div>

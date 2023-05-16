@@ -9,6 +9,8 @@ type EventContext = {
   clearEvents: () => void;
   highestSpeed: number;
   nbGoals: number;
+  nbGoalsRed: number;
+  nbGoalsBlue: number;
   isGameRunning: boolean;
   speeds: Event[];
   events: Event[];
@@ -23,7 +25,11 @@ const eventsContext = createContext<EventContext>({
   events: [],
   highestSpeed: 0,
   nbGoals: 0,
+  nbGoalsRed: 0,
+  nbGoalsBlue: 0,
 });
+
+const MAX_GRAPH_POINTS = 30;
 
 const { Provider } = eventsContext;
 
@@ -35,6 +41,8 @@ function EventsProvider({ children }: { children: React.ReactNode }) {
   const [isGameRunning, setIsGameRunning] = useState(false);
   const [highestSpeed, setHighestSpeed] = useState(0);
   const [nbGoals, setNbGoals] = useState(0);
+  const [nbGoalsRed, setNbGoalsRed] = useState(0);
+  const [nbGoalsBlue, setNbGoalsBlue] = useState(0);
 
   const start = async () => {
     setIsGameRunning(true);
@@ -43,7 +51,9 @@ function EventsProvider({ children }: { children: React.ReactNode }) {
     setIsGameRunning(false);
   };
 
-  const clearEvents = () => setEvents([]);
+  const clearEvents = () => {
+    setEvents([]);
+  };
 
   useEffect(() => {
     if (!isGameRunning) return;
@@ -65,27 +75,38 @@ function EventsProvider({ children }: { children: React.ReactNode }) {
         type: apiEventParsed.type,
       };
 
-      console.log(event);
+      const convertedSpeed = convertSpeed(event.value);
 
       if (event.type === "speed") {
-        console.log("its a speed");
-        const convertedSpeed = convertSpeed(event.value);
+        setSpeeds((prevSpeeds) => {
+          if (prevSpeeds.length === MAX_GRAPH_POINTS) {
+            return [
+              ...prevSpeeds.slice(1, prevSpeeds.length),
+              { ...event, value: convertedSpeed },
+            ];
+          }
 
-        setSpeeds((prevSpeeds) => [
-          { ...event, value: convertedSpeed },
-          ...prevSpeeds,
-        ]);
+          return [...prevSpeeds, { ...event, value: convertedSpeed }];
+        });
 
-        if (convertedSpeed > highestSpeed) setHighestSpeed(convertedSpeed);
+        setHighestSpeed((prevHighestSpeed) => {
+          if (convertedSpeed > prevHighestSpeed) return convertedSpeed;
+          return prevHighestSpeed;
+        });
         return;
       }
 
-      setEvents((prevEvents) => [event, ...prevEvents]);
+      setEvents((prevEvents) => [
+        { ...event, value: convertedSpeed },
+        ...prevEvents,
+      ]);
 
-      if (event.type === "goal") setNbGoals((prevGoal) => prevGoal + 1);
+      if (event.type === "goal") {
+        setNbGoals((prevGoal) => prevGoal + 1);
+        if (event.team === "blue") setNbGoalsBlue((prevGoal) => prevGoal + 1);
+        else setNbGoalsRed((prevGoal) => prevGoal + 1);
+      }
     };
-
-    console.log("connected ws", ws);
 
     return () => {
       ws.close();
@@ -103,6 +124,8 @@ function EventsProvider({ children }: { children: React.ReactNode }) {
         speeds,
         highestSpeed,
         nbGoals,
+        nbGoalsBlue,
+        nbGoalsRed,
       }}
     >
       {children}
