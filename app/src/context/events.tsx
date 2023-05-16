@@ -90,7 +90,7 @@ function EventsProvider({ children }: { children: React.ReactNode }) {
         });
 
         setHighestSpeed((prevHighestSpeed) => {
-          if (convertedSpeed > prevHighestSpeed) return convertedSpeed;
+          if (convertedSpeed > prevHighestSpeed) return convertedSpeed.toFixed(2) as any
           return prevHighestSpeed;
         });
         return;
