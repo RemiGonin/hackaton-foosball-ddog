@@ -55,6 +55,9 @@ export const SpeedGraph = () => {
             x: {
               display: false,
             },
+            y: {
+              min: 0,
+            },
           },
         }}
       />

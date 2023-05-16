@@ -6,13 +6,13 @@ from typing import Callable
 
 from .types import Message
 
-VIDEO_PATH = './VID_20230515_105413.mp4'
-DOWNSCALE_FACTOR = 80 # percent of original size
+VIDEO_PATH = "./VID_20230515_105413.mp4"
+DOWNSCALE_FACTOR = 80  # percent of original size
 FRAMES_PER_TIME_WINDOW = 15
-FRAMERATE = 60 # frames per second
-TIME_PER_FRAME = 1 / FRAMERATE # seconds
-CAMERA_DIMENSIONS = (1080, 1920) # (height, width)
-FOOSBALL_WIDTH = 0.7 # meters
+FRAMERATE = 60  # frames per second
+TIME_PER_FRAME = 1 / FRAMERATE  # seconds
+CAMERA_DIMENSIONS = (1080, 1920)  # (height, width)
+FOOSBALL_WIDTH = 0.7  # meters
 
 GAME_TIMEOUT = 60 * 30
 
@@ -39,15 +39,15 @@ def get_biggest_contour_center(frame):
 def nan_helper(y):
     return np.isnan(y), lambda z: z.nonzero()[0]
 
-def get_pixel_to_meter_ratio(frame, mask_field_low, mask_field_high):
 
+def get_pixel_to_meter_ratio(frame, mask_field_low, mask_field_high):
     mask = get_mask(frame, mask_field_low, mask_field_high)
 
     mask = cv2.dilate(mask, np.ones((10, 10), np.uint8), iterations=6)
 
     contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
-    #We get the biggest countour we find, should be the field
+    # We get the biggest countour we find, should be the field
     biggest_area = 0
     biggest_contour = None
     for cnt in contours:
@@ -65,9 +65,10 @@ def get_pixel_to_meter_ratio(frame, mask_field_low, mask_field_high):
         return pixel_to_meter_ratio
     return 1
 
+
 def get_goals(frame, mask_goals_low, mask_goals_high):
     mask_goals = get_mask(frame, mask_goals_low, mask_goals_high)
-    cv2.imshow('mask_goals', mask_goals)
+    cv2.imshow("mask_goals", mask_goals)
     contours, _ = cv2.findContours(mask_goals, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
     if contours:
@@ -91,16 +92,14 @@ def check_if_goal(frame, mask_goals_low, mask_goals_high, ball_center):
         goal_left, goal_right = goals
         x1, y1, w1, h1 = goal_left
         if x1 < ball_center[0] < x1 + w1 and y1 < ball_center[1] < y1 + h1:
-            return 'blue' #! LEFT IS BLUE
+            return "blue"  #! LEFT IS BLUE
 
         x2, y2, w2, h2 = goal_right
         if x2 < ball_center[0] < x2 + w2 and y2 < ball_center[1] < y2 + h2:
-            return 'red'
+            return "red"
 
         return None
     return None
-
-
 
 
 def get_mask(frame, mask_range_low, mask_range_high):
@@ -121,15 +120,16 @@ def get_mask(frame, mask_range_low, mask_range_high):
 
     return mask
 
+
 def get_ball_velocity(centers_x, centers_y, pixel_to_meter_ratio):
     if np.all(np.isnan(centers_x)) or np.all(np.isnan(centers_y)):
         return 0
 
     # Interpolate missing positions
-    nans, x= nan_helper(centers_x)
-    centers_x[nans]= np.interp(x(nans), x(~nans), centers_x[~nans])
-    nans, y= nan_helper(centers_y)
-    centers_y[nans]= np.interp(y(nans), y(~nans), centers_x[~nans])
+    nans, x = nan_helper(centers_x)
+    centers_x[nans] = np.interp(x(nans), x(~nans), centers_x[~nans])
+    nans, y = nan_helper(centers_y)
+    centers_y[nans] = np.interp(y(nans), y(~nans), centers_x[~nans])
 
     positions_offset_x = np.abs(centers_x[1:] - centers_x[:-1])
     positions_offset_y = np.abs(centers_y[1:] - centers_y[:-1])
@@ -139,9 +139,9 @@ def get_ball_velocity(centers_x, centers_y, pixel_to_meter_ratio):
 
     velocities = np.sqrt(velocities_x**2 + velocities_y**2)
 
-    max_velocity = np.max(velocities) # pixel per second
+    max_velocity = np.max(velocities)  # pixel per second
 
-    max_velocity_ms = max_velocity * pixel_to_meter_ratio # meter per second
+    max_velocity_ms = max_velocity * pixel_to_meter_ratio  # meter per second
 
     return max_velocity_ms
 
@@ -168,17 +168,19 @@ def track(send_message: Callable[[Message], None]):
     first_frame = True
     goal_cool_down = 0
 
-    while(video.isOpened()):
+    while video.isOpened():
         ret, frame = video.read()
         if not ret:
             break
         if first_frame:
-            pixel_to_meter_ratio = get_pixel_to_meter_ratio(frame, mask_field_low, mask_field_high)
+            pixel_to_meter_ratio = get_pixel_to_meter_ratio(
+                frame, mask_field_low, mask_field_high
+            )
             first_frame = False
-        cv2.imshow('Frame', frame)
+        cv2.imshow("Frame", frame)
 
         ball_mask = get_mask(frame, mask_ball_low, mask_ball_high)
-        cv2.imshow('Ball mask', ball_mask)
+        cv2.imshow("Ball mask", ball_mask)
         centers = get_biggest_contour_center(ball_mask)
         if centers:
             cX, cY = centers
@@ -188,8 +190,10 @@ def track(send_message: Callable[[Message], None]):
             if goal_cool_down == 0:
                 goal = check_if_goal(frame, mask_goals_low, mask_goals_high, (cX, cY))
                 if goal is not None:
-                    send_message(Message(**{"type": "goal", "team": goal, "value": None}))
-                    goal_cool_down = FRAMERATE * 3 # number of frames in 3 seconds
+                    send_message(
+                        Message(**{"type": "goal", "team": goal, "value": None})
+                    )
+                    goal_cool_down = FRAMERATE * 3  # number of frames in 3 seconds
 
         else:
             centers_x[i] = np.nan
@@ -199,19 +203,28 @@ def track(send_message: Callable[[Message], None]):
             goal_cool_down -= 1
 
         i = i + 1
-        if (i == FRAMES_PER_TIME_WINDOW):
-            max_velocity_ms = get_ball_velocity(centers_x, centers_y, pixel_to_meter_ratio)
+        if i == FRAMES_PER_TIME_WINDOW:
+            max_velocity_ms = get_ball_velocity(
+                centers_x, centers_y, pixel_to_meter_ratio
+            )
             print(max_velocity_ms)
-            send_message({"type": "speed", "team": None, "value": "{:.2f}".format(max_velocity_ms)})
+            send_message(
+                {
+                    "type": "speed",
+                    "team": None,
+                    "value": "{:.2f}".format(max_velocity_ms),
+                }
+            )
             # reset
             i = 0
 
         key = cv2.waitKey(30)
-        if key == ord('q') or key == 27:
+        if key == ord("q") or key == 27:
             break
 
     # video.release()
     # cv2.destroyAllWindows()
+
 
 async def analyse_game(send_message):
     start_game_time = time.time()
@@ -223,7 +236,7 @@ async def analyse_game(send_message):
             raise WebSocketDisconnect()
         # Do your stuff here
         print("sending stuff")
-        await callback(None)
+        await send_message(None)
         # message = {"type": "speed", "team": "unknown", "value": "0."}
         # if data:
         # message = data
@@ -231,4 +244,3 @@ async def analyse_game(send_message):
         # await websocket.send_text(str_message)
         time.sleep(10)
         # call callback with {"type": "speed", "team": "unknown", "value": "0."}
-
