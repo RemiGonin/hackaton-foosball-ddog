@@ -59,7 +59,7 @@ def get_pixel_to_meter_ratio(frame, mask_field_low, mask_field_high):
     if biggest_contour is not None:
         frame = cv2.cvtColor(frame, cv2.COLOR_HSV2RGB)
         rect = cv2.minAreaRect(biggest_contour)
-        foosball_width_px = rect[1][1]
+        foosball_width_px = rect[1][1] if rect[1][1] < rect[1][0] else rect[1][0]
         pixel_to_meter_ratio = FOOSBALL_WIDTH / foosball_width_px
         print(f"{pixel_to_meter_ratio = }")
         return pixel_to_meter_ratio
