@@ -4,7 +4,7 @@ import numpy as np
 import cv2
 from typing import Callable
 
-# from .types import Message
+from .types import Message
 
 VIDEO_PATH = "./VID_20230515_105413.mp4"
 DOWNSCALE_FACTOR = 80  # percent of original size
@@ -56,7 +56,6 @@ def get_pixel_to_meter_ratio(frame, mask_field_low, mask_field_high):
             biggest_area = area
             biggest_contour = cnt
 
-    if biggest_contour is not None:
     if biggest_contour is not None:
         frame = cv2.cvtColor(frame, cv2.COLOR_HSV2RGB)
         rect = cv2.minAreaRect(biggest_contour)
