@@ -61,7 +61,7 @@ def get_pixel_to_meter_ratio(frame, mask_field_low, mask_field_high):
         rect = cv2.minAreaRect(biggest_contour)
         foosball_width_px = rect[1][1] if rect[1][1] < rect[1][0] else rect[1][0]
         pixel_to_meter_ratio = FOOSBALL_WIDTH / foosball_width_px
-        print(f"{pixel_to_meter_ratio = }")
+        print(f"{pixel_to_meter_ratio = } {rect = !r}")
         return pixel_to_meter_ratio
 
     return 1
@@ -161,6 +161,8 @@ async def track(send_message):
     mask_goals_low = (75, 170, 9)
     mask_goals_high = (116, 255, 158)
 
+    max_velocity_ms = 0
+
     centers_x = np.zeros(FRAMES_PER_TIME_WINDOW)
     centers_y = np.zeros(FRAMES_PER_TIME_WINDOW)
 
@@ -172,10 +174,10 @@ async def track(send_message):
         ret, frame = video.read()
         if not ret:
             break
-        cv2.imshow('frame', frame)
-        key = cv2.waitKey(30)
-        if key == ord('q') or key == 27:
-            break
+        # cv2.imshow('frame', frame)
+        # key = cv2.waitKey(30)
+        # if key == ord('q') or key == 27:
+        #     break
         if first_frame:
             pixel_to_meter_ratio = get_pixel_to_meter_ratio(
                 frame, mask_field_low, mask_field_high
@@ -194,7 +196,7 @@ async def track(send_message):
                 goal = check_if_goal((cX, cY), goals)
                 if goal is not None:
                     await send_message(
-                        Message(**{"type": "goal", "team": goal, "value": None})
+                        Message(**{"type": "goal", "team": goal, "value": max_velocity_ms})
                     )
                     goal_cool_down = FRAMERATE * 3  # number of frames in 3 seconds
 
