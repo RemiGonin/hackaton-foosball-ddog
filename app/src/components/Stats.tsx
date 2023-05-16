@@ -10,7 +10,7 @@ export const Stats: React.FunctionComponent<Props> = ({
   unit,
 }) => {
   return (
-    <div className="h-full rounded-md w-52 bg-gray-100 flex flex-col items-center">
+    <div className="h-full shrink-0 rounded-md w-52 bg-gray-100 flex flex-col items-center">
       <h3 className="py-4 text-lg">{label}</h3>
       <div className="flex-1 w-full flex items-center justify-center">
         <div className="relative">

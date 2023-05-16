@@ -25,9 +25,14 @@ export default function Home() {
             <div className="h-2/3 w-full">
               <SpeedGraph />
             </div>
-            <div className="h-1/3 flex flex-wrap justify-around items-center gap-4 py-8">
+            <div className="h-1/3 w-full flex gap-4 py-8 px-4 overflow-auto">
               <Stats label="Highest Speed" value={highestSpeed} unit="km/h" />
               <Stats label="Total Goals" value={nbGoals} />
+              <Stats label="Hi  ghest Speed" value={50} unit="km/h" />
+              <Stats label="Hi  ghest Speed" value={50} unit="km/h" />
+              <Stats label="Hi  ghest Speed" value={50} unit="km/h" />
+              <Stats label="Hi  ghest Speed" value={50} unit="km/h" />
+              <Stats label="Hi  ghest Speed" value={50} unit="km/h" />
               <Stats label="Hi  ghest Speed" value={50} unit="km/h" />
             </div>
           </div>
