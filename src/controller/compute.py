@@ -39,8 +39,6 @@ def get_biggest_contour_center(frame):
 def nan_helper(y):
     return np.isnan(y), lambda z: z.nonzero()[0]
 
-def get_pixel_to_meter_ratio(frame, mask_field_low, mask_field_high):
-    return 1
 
 def get_pixel_to_meter_ratio(frame, mask_field_low, mask_field_high):
     mask = get_mask(frame, mask_field_low, mask_field_high)
@@ -58,13 +56,14 @@ def get_pixel_to_meter_ratio(frame, mask_field_low, mask_field_high):
             biggest_area = area
             biggest_contour = cnt
 
-    if biggest_contour:
+    if biggest_contour is not None:
         frame = cv2.cvtColor(frame, cv2.COLOR_HSV2RGB)
         rect = cv2.minAreaRect(biggest_contour)
         foosball_width_px = rect[1][1]
         pixel_to_meter_ratio = FOOSBALL_WIDTH / foosball_width_px
-
+        print(f"{pixel_to_meter_ratio = }")
         return pixel_to_meter_ratio
+
     return 1
 
 
@@ -87,8 +86,7 @@ def get_goals(frame, mask_goals_low, mask_goals_high):
     return None
 
 
-def check_if_goal(frame, mask_goals_low, mask_goals_high, ball_center):
-    goals = get_goals(frame, mask_goals_low, mask_goals_high)
+def check_if_goal(ball_center, goals):
     if goals:
         goal_left, goal_right = goals
         x1, y1, w1, h1 = goal_left
@@ -147,11 +145,12 @@ def get_ball_velocity(centers_x, centers_y, pixel_to_meter_ratio):
     return max_velocity_ms
 
 
-async def track(send_message: Callable[[Message], None]):
+async def track(send_message):
     # Set the video flux buffer size to 5 to drop frames and not accumulate delay if we can't process fast emough
     #! TO REMOVE
-    video = cv2.VideoCapture(0)
+    video = cv2.VideoCapture(VIDEO_PATH)
     video.set(cv2.CAP_PROP_FRAME_COUNT, 5)
+    video.set(cv2.CAP_PROP_POS_FRAMES, 12000)
 
     mask_ball_low = (23, 131, 133)
     mask_ball_high = (33, 251, 252)
@@ -168,15 +167,20 @@ async def track(send_message: Callable[[Message], None]):
     i = 0
     first_frame = True
     goal_cool_down = 0
-
+    refresh_counter = 0
     while video.isOpened():
         ret, frame = video.read()
         if not ret:
+            break
+        cv2.imshow('frame', frame)
+        key = cv2.waitKey(30)
+        if key == ord('q') or key == 27:
             break
         if first_frame:
             pixel_to_meter_ratio = get_pixel_to_meter_ratio(
                 frame, mask_field_low, mask_field_high
             )
+            goals = get_goals(frame, mask_goals_low, mask_goals_high)
             first_frame = False
 
         ball_mask = get_mask(frame, mask_ball_low, mask_ball_high)
@@ -187,9 +191,9 @@ async def track(send_message: Callable[[Message], None]):
             centers_y[i] = cY
 
             if goal_cool_down == 0:
-                goal = check_if_goal(frame, mask_goals_low, mask_goals_high, (cX, cY))
+                goal = check_if_goal((cX, cY), goals)
                 if goal is not None:
-                    send_message(
+                    await send_message(
                         Message(**{"type": "goal", "team": goal, "value": None})
                     )
                     goal_cool_down = FRAMERATE * 3  # number of frames in 3 seconds
@@ -216,6 +220,16 @@ async def track(send_message: Callable[[Message], None]):
             )
             # reset
             i = 0
+
+        refresh_counter += 1
+
+        if refresh_counter == FRAMERATE * 2:
+            goals = get_goals(frame, mask_goals_low, mask_goals_high)
+            pixel_to_meter_ratio = get_pixel_to_meter_ratio(
+                frame, mask_field_low, mask_field_high
+            )
+            refresh_counter = 0
+
 
 
     # video.release()
@@ -244,3 +258,4 @@ async def analyse_game(send_message):
         # await websocket.send_text(str_message)
 
         # call callback with {"type": "speed", "team": "unknown", "value": "0."}
+
