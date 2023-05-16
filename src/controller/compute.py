@@ -260,4 +260,3 @@ async def analyse_game(send_message):
 
         # call callback with {"type": "speed", "team": "unknown", "value": "0."}
 
-analyse_game()
