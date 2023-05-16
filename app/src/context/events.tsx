@@ -28,7 +28,9 @@ const eventsContext = createContext<EventContext>({
 
 const { Provider } = eventsContext;
 
-const socket = io(RASBERRY_BASE_PATH);
+const socket = io(RASBERRY_BASE_PATH, {
+  autoConnect: false,
+});
 
 const convertSpeed = (speed: number) => (speed * 3600) / 1000;
 

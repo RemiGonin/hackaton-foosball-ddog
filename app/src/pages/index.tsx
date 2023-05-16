@@ -28,7 +28,7 @@ export default function Home() {
             <div className="h-1/3 flex flex-wrap justify-around items-center gap-4 py-8">
               <Stats label="Highest Speed" value={highestSpeed} unit="km/h" />
               <Stats label="Total Goals" value={nbGoals} />
-              <Stats label="Highest Speed" value={50} unit="km/h" />
+              <Stats label="Hi  ghest Speed" value={50} unit="km/h" />
             </div>
           </div>
         </div>
