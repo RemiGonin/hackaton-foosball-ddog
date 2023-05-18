@@ -1,8 +1,10 @@
 import time
+from typing import Callable
+from pathlib import Path
+
 from fastapi import WebSocketDisconnect
 import numpy as np
 import cv2
-from typing import Callable
 
 from .types import Message
 
@@ -13,14 +15,17 @@ FRAMERATE = 30  # frames per second
 TIME_PER_FRAME = 1 / FRAMERATE  # seconds
 CAMERA_DIMENSIONS = (1080, 1920)  # (height, width)
 FOOSBALL_WIDTH = 0.7  # meters
+CALIBRATION_COOLDOWN = FRAMERATE * 2
+GOAL_TIMEOUT_SEC = 3  # number of frames in 3 seconds
+DEFAULT_PIXEL_TO_METER_RATIO = 0.00088
 
 GAME_TIMEOUT = 60 * 30
 
 
-def get_biggest_contour_center(frame):
+def get_biggest_contour_center(mask):
     biggest_area = 0
     biggest_contour = None
-    contours, _ = cv2.findContours(frame, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     for cnt in contours:
         area = cv2.contourArea(cnt)
         if area > biggest_area:
@@ -64,7 +69,7 @@ def get_pixel_to_meter_ratio(frame, mask_field_low, mask_field_high):
         print(f"{pixel_to_meter_ratio = } {rect = !r}")
         return pixel_to_meter_ratio
 
-    return 0.00088
+    return DEFAULT_PIXEL_TO_METER_RATIO
 
 
 def get_goals(frame, mask_goals_low, mask_goals_high):
@@ -101,7 +106,7 @@ def check_if_goal(ball_center, goals):
     return None
 
 
-def get_mask(frame, mask_range_low, mask_range_high):
+def get_mask(frame, mask_range_low, mask_range_high) -> cv2.Mat:
     width = int(frame.shape[1] * DOWNSCALE_FACTOR / 100)
     height = int(frame.shape[0] * DOWNSCALE_FACTOR / 100)
     dim = (width, height)
@@ -144,14 +149,41 @@ def get_ball_velocity(centers_x, centers_y, pixel_to_meter_ratio):
 
     return max_velocity_ms
 
+def visualize(frame, ball_mask, ball_pos):
+    cv2.imshow('frame', frame)
+    radius = 20
+    color = (0, 0, 255)
+    thickness = 10
+    vis2 = cv2.cvtColor(ball_mask, cv2.COLOR_GRAY2BGR)
+    image = cv2.circle(vis2, ball_pos, radius, color, thickness)
+    cv2.imshow('ball', image)
+    cv2.waitKey(20)
 
-async def track(send_message):
+def set_video_time(value):
+    global video
+    global start_frame
+    global i
+    start_frame = value
+    video.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
+    i = 0
+
+async def track(send_message, visualization: Callable, stream_input: str=""):
     # Set the video flux buffer size to 5 to drop frames and not accumulate delay if we can't process fast emough
     #! TO REMOVE
-    video = cv2.VideoCapture(1)
-    # video = cv2.VideoCapture(VIDEO_PATH)
-    # video.set(cv2.CAP_PROP_FRAME_COUNT, 5)
-    # video.set(cv2.CAP_PROP_POS_FRAMES, 12000)
+    global video
+    global start_frame
+    global i
+
+    if stream_input:
+        video = cv2.VideoCapture(stream_input)
+        total = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
+        start_frame = 0
+        video.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
+        cv2.namedWindow('frame')
+        cv2.createTrackbar('trackbar', 'frame', start_frame, total, set_video_time)
+    else:
+        video = cv2.VideoCapture(1)
+        video.set(cv2.CAP_PROP_FRAME_COUNT, 5)
 
     mask_ball_low = (23, 131, 133)
     mask_ball_high = (33, 251, 252)
@@ -168,52 +200,56 @@ async def track(send_message):
     centers_y = np.zeros(FRAMES_PER_TIME_WINDOW)
 
     i = 0
-    first_frame = True
+    time_until_calibration = 0
     goal_cool_down = 0
-    refresh_counter = 0
+
     while video.isOpened():
+        start_time = time.time()
         ret, frame = video.read()
         if not ret:
+            # TODO: add a retry number (in case no camera frame to read yet)
+            print("No frame to read. end of video, or camera issue")
             break
-        # cv2.imshow('frame', frame)
-        # key = cv2.waitKey(30)
-        # if key == ord('q') or key == 27:
-        #     break
-        if first_frame:
+
+        goal_cool_down -= 1
+        time_until_calibration -= 1
+
+        if time_until_calibration <= 0:
             pixel_to_meter_ratio = get_pixel_to_meter_ratio(
                 frame, mask_field_low, mask_field_high
             )
             goals = get_goals(frame, mask_goals_low, mask_goals_high)
-            first_frame = False
+            time_until_calibration = CALIBRATION_COOLDOWN
 
         ball_mask = get_mask(frame, mask_ball_low, mask_ball_high)
-        centers = get_biggest_contour_center(ball_mask)
-        if centers:
-            cX, cY = centers
+        center = get_biggest_contour_center(ball_mask)
+
+        visualization(frame, ball_mask, center)
+
+        if center:
+            cX, cY = center
             centers_x[i] = cX
             centers_y[i] = cY
 
-            if goal_cool_down == 0:
+            if goal_cool_down <= 0:
                 goal = check_if_goal((cX, cY), goals)
                 if goal is not None:
                     await send_message(
                         Message(**{"type": "goal", "team": goal, "value": max_velocity_ms})
                     )
-                    goal_cool_down = FRAMERATE * 3  # number of frames in 3 seconds
+                    goal_cool_down = FRAMERATE * GOAL_TIMEOUT_SEC
 
         else:
             centers_x[i] = np.nan
             centers_y[i] = np.nan
 
-        if goal_cool_down > 0:
-            goal_cool_down -= 1
 
         i = i + 1
         if i == FRAMES_PER_TIME_WINDOW:
             max_velocity_ms = get_ball_velocity(
                 centers_x, centers_y, pixel_to_meter_ratio
             )
-            print(max_velocity_ms)
+            print(f"Velocity: {max_velocity_ms:.2f}")
             await send_message(
                 Message(**{
                     "type": "speed",
@@ -223,29 +259,29 @@ async def track(send_message):
             )
             # reset
             i = 0
-
-        refresh_counter += 1
-
-        if refresh_counter == FRAMERATE * 2:
-            goals = get_goals(frame, mask_goals_low, mask_goals_high)
-            pixel_to_meter_ratio = get_pixel_to_meter_ratio(
-                frame, mask_field_low, mask_field_high
-            )
-            refresh_counter = 0
-
+        end_time = time.time()
+        duration = end_time - start_time
+        # print(f"Compute framerate: {1/duration:.2f}")
 
 
     # video.release()
     # cv2.destroyAllWindows()
 
 
-async def analyse_game(send_message):
+async def analyse_game(send_message: Callable, visu_func: Callable = None, video_path: str=""):
     # start_game_time = time.time()
     print("analyse called")
+    if video_path:
+        video_path: Path = Path(video_path).resolve().expanduser()
+        if not video_path.is_file():
+            raise ValueError("Video file do not exist")
+    if not visu_func:
+        visu_func = lambda x, y, z: None
+    await track(send_message, visu_func, str(video_path))
+
     # while True:
     #     await send_message(Message(**{"type": "speed", "team": None, "value": 40.4}))
     #     time.sleep(3)
-    await track(send_message)
     # while True:
     #     game_duration = time.time() - start_game_time
     #     if game_duration > GAME_TIMEOUT:

@@ -2,3 +2,4 @@ uvicorn == 0.22.0
 fastapi == 0.95.1
 opencv-python == 4.7.0.72
 websockets == 11.0.3
+pydantic
